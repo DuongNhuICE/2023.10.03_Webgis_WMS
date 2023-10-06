@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080/webgis/map_wms_wfs_query.html",
+            "url": "http://localhost:8080/webgis/index.html",
             "webRoot": "${workspaceFolder}"
         }
     ]

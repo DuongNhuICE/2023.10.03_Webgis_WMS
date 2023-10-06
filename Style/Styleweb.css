@@ -84,12 +84,60 @@
        background-color: darksalmon;
    }
 
+   /*
    #clear_btn {
+       display: flex;
        position: absolute;
-       z-index: 500;
-       top: 1%;
-       left: 75%;
+       background-color: transparent;
+       border: none;
+       z-index: 1000;
+       top: 0%;
+       left: 0%;
+       width: 30px;
+       height: 30px;
+       font-size: 21px;
 
+   }
+*/
+   #btn_do_chieu_dai {
+       display: flex;
+       position: absolute;
+       background-color: transparent;
+       border: none;
+       z-index: 1000;
+       top: 31%;
+       left: 0%;
+       width: 30px;
+       height: 30px;
+       font-size: 21px;
+
+   }
+
+   #btn_do_dt {
+       display: flex;
+       position: absolute;
+       background-color: transparent;
+       border: none;
+       z-index: 1000;
+       top: 35%;
+       left: 0%;
+       width: 30px;
+       height: 30px;
+       font-size: 21px;
+
+   }
+
+   .hover-content {
+       display: none;
+       position: absolute;
+       /* Sử dụng vị trí tương đối */
+       background-color: #f1f1f1;
+       border: 1px solid #ccc;
+       padding: 1px;
+       font-size: 15;
+       z-index: 1;
+
+       /* Đảm bảo nội dung nằm trên nút */
    }
 
    .ol-mouse-position {
@@ -140,6 +188,7 @@
    }
 
    .ol-popup {
+
        position: absolute;
        background-color: white;
        -webkit-filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
@@ -150,6 +199,11 @@
        bottom: 12px;
        left: -50px;
        min-width: 280px;
+       max-width: 800px;
+       max-height: 500px;
+       overflow-x: auto;
+       overflow-y: auto;
+
    }
 
    .ol-popup:after,
@@ -191,11 +245,16 @@
    #measure {
        position: absolute;
        z-index: 50;
-       top: 1%;
+       top: 30%;
        /*
        height:1%;
        */
-       left: 5%;
+       left: 0.1%;
+
+   }
+
+   #measuretype {
+       display: none;
 
    }
 
@@ -207,6 +266,23 @@
        height:15px;
        */
        left: 30%;
+
+   }
+
+   #Hienthipopup {
+       position: absolute;
+       display: inline;
+       background-color: white;
+       border-radius: 10px;
+       background-origin: padding-box;
+       padding: 2px;
+       z-index: 50;
+       top: 0.5%;
+       /*
+       height:15px;
+       */
+       left: 2.5%;
+       font-size: 12px;
 
    }
 
@@ -300,3 +376,20 @@
        padding-top: 10px;
        font-size: 1.1em;
    }
+
+   #btn-xoa {
+       padding-right: 10px;
+       /* Thêm khoảng trắng bên phải của nội dung */
+   }
+
+   #btn-xoa .fas {
+       margin-right: 5px;
+       /* Thêm khoảng trắng bên phải của biểu tượng */
+   }
+
+   #btn-xoa {
+       background-color: #FF0000;
+       /* Mã màu đỏ */
+   }
+
+   /* Đặt vị trí của nút */

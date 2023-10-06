@@ -1439,7 +1439,6 @@ function add_draw_Interaction() {
                     //title: '<h5>' + value_crop+' '+ value_param +' '+ value_seas+' '+value_level+'</h5>',
                     source: new ol.source.Vector({
                         url: url,
-
                         format: new ol.format.GeoJSON()
                     }),
                     style: style,
