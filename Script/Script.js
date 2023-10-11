@@ -66,8 +66,6 @@ var lyr_GoogleMaps_1 = new ol.layer.Tile({
     'title': 'Bản đồ đường phố',
     'type': 'base',
     'opacity': 1.000000,
-
-
     source: new ol.source.XYZ({
         attributions: ' ',
         url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
@@ -81,9 +79,9 @@ var base_maps = new ol.layer.Group({
     ]
 });
 
-
+// LỚP QUY HOAHC CẢNG
 var overlays = new ol.layer.Group({
-    'title': 'Lớp quy hoạch',
+    'title': 'Lớp quy hoạch cảng',
     layers: [
         new ol.layer.Image({
             // tên title trùng với Geoserver
@@ -109,28 +107,125 @@ var overlays = new ol.layer.Group({
 
     ]
 });
+//LỚP QUY HOẠCH THÀNH PHỐ
+var qh_tp = new ol.layer.Group({
+    'title': 'Quy hoạch chung thành phố Hải Phòng',
+    layers: [
+        new ol.layer.Image({
+            // tên title trùng với Geoserver
+            title: 'Quy hoạch giao thông',
+            visible: false,
+            // extent: [-180, -90, -180, 90],
+            source: new ol.source.ImageWMS({
+                url: 'http://localhost:8080/geoserver/wms',
+                params: { 'LAYERS': 'CangHP:Quy hoạch giao thông' },
+                ratio: 1,
+                serverType: 'geoserver'
+            })
+        }),
+        new ol.layer.Image({
+            title: 'Quy hoạch sử dụng đất',
+            visible: false,
+            // extent: [-180, -90, -180, 90],
+            source: new ol.source.ImageWMS({
+                url: 'http://localhost:8080/geoserver/wms',
+                params: { 'LAYERS': 'CangHP:Quy hoạch sử dụng đất' },
+                ratio: 1,
+                serverType: 'geoserver'
+            })
+        }),
+        new ol.layer.Image({
+            title: 'Ranh giới quy hoạch',
+            visible: false,
+            // extent: [-180, -90, -180, 90],
+            source: new ol.source.ImageWMS({
+                url: 'http://localhost:8080/geoserver/wms',
+                params: { 'LAYERS': 'CangHP:Ranh giới quy hoạch' },
+                ratio: 1,
+                serverType: 'geoserver'
+            })
+        }),
+        new ol.layer.Image({
+            title: 'Ranh giới quận, huyện',
+            visible: false,
+            // extent: [-180, -90, -180, 90],
+            source: new ol.source.ImageWMS({
+                url: 'http://localhost:8080/geoserver/wms',
+                params: { 'LAYERS': 'CangHP:Ranh giới quận, huyện' },
+                ratio: 1,
+                serverType: 'geoserver'
+            })
+        }),
+    ]
+});
 
 var map = new ol.Map({
     target: 'map',
     view: view,
     overlays: [overlay]
 });
-
 map.addLayer(base_maps);
 map.addLayer(overlays);
 
+map.addLayer(qh_tp);
+
+// Add thêm lớp vào bản đồ
 var rainfall = new ol.layer.Image({
-    title: 'Data_Web_HP:Quy hoạch khu bến_01',
+    title: 'Vùng nước cảng biển Hải Phòng',
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
         url: 'http://localhost:8080/geoserver/wms',
-        params: { 'LAYERS': 'Data_Web_HP:Quy hoạch khu bến_01' },
+        params: { 'LAYERS': 'CangHP:Vùng nước cảng biển Hải Phòng' },
         ratio: 1,
         serverType: 'geoserver'
     })
 });
 // Add vào map
-//overlays.getLayers().push(rainfall);
+overlays.getLayers().push(rainfall);
+//map.addLayer(rainfall);
+//
+// Add thêm lớp vào bản đồ
+var phaotieu = new ol.layer.Image({
+    title: 'Hệ thống phao báo hiệu tàu',
+    // extent: [-180, -90, -180, 90],
+    source: new ol.source.ImageWMS({
+        url: 'http://localhost:8080/geoserver/wms',
+        params: { 'LAYERS': 'CangHP:Hệ thống phao báo hiệu tàu' },
+        ratio: 1,
+        serverType: 'geoserver'
+    })
+});
+// Add vào map
+overlays.getLayers().push(phaotieu);
+//map.addLayer(rainfall);
+// Add thêm lớp vào bản đồ
+var vungneo = new ol.layer.Image({
+    title: 'Vùng neo và vùng đón trả hoa tiêu',
+    // extent: [-180, -90, -180, 90],
+    source: new ol.source.ImageWMS({
+        url: 'http://localhost:8080/geoserver/wms',
+        params: { 'LAYERS': 'CangHP:Vùng neo và vùng đón trả hoa tiêu' },
+        ratio: 1,
+        serverType: 'geoserver'
+    })
+});
+// Add vào map
+overlays.getLayers().push(vungneo);
+//map.addLayer(rainfall);
+
+// Add thêm lớp vào bản đồ
+var duongthuy = new ol.layer.Image({
+    title: 'Đường thủy',
+    // extent: [-180, -90, -180, 90],
+    source: new ol.source.ImageWMS({
+        url: 'http://localhost:8080/geoserver/wms',
+        params: { 'LAYERS': 'CangHP:Đường thủy' },
+        ratio: 1,
+        serverType: 'geoserver'
+    })
+});
+// Add vào map
+overlays.getLayers().push(duongthuy);
 //map.addLayer(rainfall);
 
 var mouse_position = new ol.control.MousePosition();
@@ -374,7 +469,7 @@ function getinfo(evt) {
 
                 var style = new ol.style.Style({
                     fill: new ol.style.Fill({
-                        color: 'rgba(255, 255, 255, 0.7)'
+                        color: 'transparent', // Đổi màu sắc tại đây
                     }),
                     stroke: new ol.style.Stroke({
                         color: '#ffcc33',
@@ -1314,7 +1409,7 @@ $(function () {
 
 var highlightStyle = new ol.style.Style({
     fill: new ol.style.Fill({
-        color: 'rgba(255,255,255,0.7)',
+        color: 'transparent', // Đổi màu sắc tại đây
     }),
     stroke: new ol.style.Stroke({
         color: '#3399CC',
@@ -1549,7 +1644,7 @@ function query() {
     //console.log(url);
     var style = new ol.style.Style({
         fill: new ol.style.Fill({
-            color: 'rgba(255, 255, 255, 0.7)'
+            color: 'transparent', // Đổi màu sắc tại đây
         }),
         stroke: new ol.style.Stroke({
             color: '#ffcc33',
@@ -1875,7 +1970,7 @@ function add_draw_Interaction() {
                 //console.log(url);
                 var style = new ol.style.Style({
                     fill: new ol.style.Fill({
-                        color: 'rgba(255, 255, 255, 0.7)'
+                        color: 'transparent', // Đổi màu sắc tại đây
                     }),
                     stroke: new ol.style.Stroke({
                         color: '#ffcc33',
@@ -2188,7 +2283,7 @@ function Selected_obj(evt) {
             // CHỈNH STYLE HIỂN THỊ CHO ĐỐI TƯỢNG
             var style = new ol.style.Style({
                 fill: new ol.style.Fill({
-                    color: 'rgba(255, 255, 255, 0.7)'
+                    color: 'transparent', // Đổi màu sắc tại đây
                 }),
                 stroke: new ol.style.Stroke({
                     color: '#ffcc33',
