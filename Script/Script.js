@@ -88,7 +88,7 @@ var overlays = new ol.layer.Group({
             title: 'Quy hoạch khu bến',
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'Data_Web_HP:Quy hoạch khu bến' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -98,7 +98,7 @@ var overlays = new ol.layer.Group({
             title: 'Tên bến cảng',
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'Data_Web_HP:Tên bến cảng' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -117,7 +117,7 @@ var qh_tp = new ol.layer.Group({
             visible: false,
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'CangHP:Quy hoạch giao thông' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -128,7 +128,7 @@ var qh_tp = new ol.layer.Group({
             visible: false,
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'CangHP:Quy hoạch sử dụng đất' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -139,7 +139,7 @@ var qh_tp = new ol.layer.Group({
             visible: false,
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'CangHP:Ranh giới quy hoạch' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -150,7 +150,7 @@ var qh_tp = new ol.layer.Group({
             visible: false,
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
-                url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+                url: 'http://localhost:8080/geoserver/wms',
                 params: { 'LAYERS': 'CangHP:Ranh giới quận, huyện' },
                 ratio: 1,
                 serverType: 'geoserver'
@@ -173,7 +173,7 @@ var rainfall = new ol.layer.Image({
     title: 'Vùng nước cảng biển Hải Phòng',
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
-        url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+        url: 'http://localhost:8080/geoserver/wms',
         params: { 'LAYERS': 'CangHP:Vùng nước cảng biển Hải Phòng' },
         ratio: 1,
         serverType: 'geoserver'
@@ -189,7 +189,7 @@ var phaotieu = new ol.layer.Image({
     visible: false,
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
-        url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+        url: 'http://localhost:8080/geoserver/wms',
         params: { 'LAYERS': 'CangHP:Hệ thống phao báo hiệu tàu' },
         ratio: 1,
         serverType: 'geoserver'
@@ -203,7 +203,7 @@ var vungneo = new ol.layer.Image({
     title: 'Vùng neo và vùng đón trả hoa tiêu',
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
-        url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+        url: 'http://localhost:8080/geoserver/wms',
         params: { 'LAYERS': 'CangHP:Vùng neo và vùng đón trả hoa tiêu' },
         ratio: 1,
         serverType: 'geoserver'
@@ -219,7 +219,7 @@ var duongthuy = new ol.layer.Image({
     visible: false,
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
-        url: 'http://www.cmbgeoserver.com:8080/geoserver/wms',
+        url: 'http://localhost:8080/geoserver/wms',
         params: { 'LAYERS': 'CangHP:Đường thủy' },
         ratio: 1,
         serverType: 'geoserver'
