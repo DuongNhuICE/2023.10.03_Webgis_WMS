@@ -27,9 +27,23 @@
 
 <body>
   <div id="title">
-    <marquee behavior="scroll" direction="left">
-      <h5><b>QUẢN LÝ QUY HOẠCH CẢNG BIỂN HẢI PHÒNG</b></h5>
-    </marquee>
+    <header>
+      <!-- Thêm logo vào header -->
+      <img src="logo\CMB Logo .png" alt="Logo" class="logo">
+      <nav>
+
+        <h1>QUẢN LÝ QUY HOẠCH CẢNG BIỂN HẢI PHÒNG</h1>
+        <!-- Thêm menu hoặc nút điều hướng ở đây nếu cần -->
+        <nav>
+          <ul>
+            <li><a href="https://cmbvn.com.vn/" target="_blank">TRANG CHỦ</a></li>
+            <li><a href="https://cmbvn.com.vn/gioi-thieu" target="_blank">GIỚI THIỆU</a></li>
+            <li><a href="https://cmbvn.com.vn/du-an-tieu-bieu" target="_blank">DỰ ÁN</a></li>
+            <li><a href="https://cmbvn.com.vn/lien-he" target="_blank">LIÊN HỆ</a></li>
+          </ul>
+        </nav>
+      </nav>
+    </header>
   </div>
   <div id="map">
     <form id="measure">
@@ -116,9 +130,9 @@
           <option value="select">--Kiểu chọn đối tượng--</option>
           <option value="Square">Hình vuông</option>
           <option value="Box">Hình hộp</option>
-          <option value="Polygon">Vùng polyline</option>
+          <!--option value="Polygon">Vùng polyline</option-->
           <option value="Star">Hình ngôi sao</option>
-          <option value="clear">Xóa chọn</option>
+          <!--option value="clear">Xóa chọn</option-->
         </select>
         <br>
         <button class="btn btn-secondary" onclick="clear_all()"><i class="fas fa-trash"></i> Bỏ chọn </button>

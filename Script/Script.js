@@ -5,7 +5,6 @@ var container = document.getElementById('popup');
 var content = document.getElementById('popup-content');
 var closer = document.getElementById('popup-closer');
 
-
 /**
  * Create an overlay to anchor the popup to the map.
  */
@@ -88,7 +87,7 @@ var overlays = new ol.layer.Group({
     layers: [
         new ol.layer.Image({
             // tên title trùng với Geoserver
-            title: 'Data_Web_HP:Quy hoạch khu bến',
+            title: 'Quy hoạch khu bến',
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
                 url: 'http://localhost:8080/geoserver/wms',
@@ -98,7 +97,7 @@ var overlays = new ol.layer.Group({
             })
         }),
         new ol.layer.Image({
-            title: 'Data_Web_HP:Tên bến cảng',
+            title: 'Tên bến cảng',
             // extent: [-180, -90, -180, 90],
             source: new ol.source.ImageWMS({
                 url: 'http://localhost:8080/geoserver/wms',
@@ -131,7 +130,7 @@ var rainfall = new ol.layer.Image({
     })
 });
 // Add vào map
-overlays.getLayers().push(rainfall);
+//overlays.getLayers().push(rainfall);
 //map.addLayer(rainfall);
 
 var mouse_position = new ol.control.MousePosition();
@@ -194,12 +193,11 @@ function legend() {
     var ar = [];
     var i;
     for (i = 0; i < no_layers; i++) {
-        ar.push("http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=" + overlays.getLayers().item(i).get('title'));
+        ar.push("http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=" + overlays.getLayers().item(i).get('title'));
         //alert(overlays.getLayers().item(i).get('title'));
     }
     for (i = 0; i < no_layers; i++) {
         var head = document.createElement("p");
-
         var txt = document.createTextNode(overlays.getLayers().item(i).get('title'));
         //alert(txt[i]);
         head.appendChild(txt);
@@ -207,53 +205,69 @@ function legend() {
         element.appendChild(head);
         var img = new Image();
         img.src = ar[i];
-
         var src = document.getElementById("legend");
         src.appendChild(img);
-
     }
 
 }
 
 legend();
+// Lấy trường dữ liệu
+function getFeatureTypeAttributes(layerName, callback) {
+    var Att_name_pickobj = [];
+    var Att_title_pickobj = [];
 
-// Define a separate vector layer for highlighting features
-var highlightLayer = new ol.layer.Vector({
-    source: new ol.source.Vector(),
-    style: new ol.style.Style({
-        fill: new ol.style.Fill({
-            color: 'rgba(255, 255, 255, 0.7)'
-        }),
-        stroke: new ol.style.Stroke({
-            color: '#ffcc33',
-            width: 3
-        }),
-        image: new ol.style.Circle({
-            radius: 7,
-            fill: new ol.style.Fill({
-                color: '#ffcc33'
-            })
-        })
-    })
-});
+    $.ajax({
+        type: "GET",
+        url: "http://localhost:8080/geoserver/wfs?service=WFS&request=DescribeFeatureType&version=1.1.0&typeName=" + layerName,
+        dataType: "xml",
+        success: function (xml) {
+            $(xml).find('xsd\\:sequence').each(function () {
+                $(this).find('xsd\\:element').each(function () {
+                    var documentationElement = $(this).find('xsd\\:documentation');
+                    var text_content = documentationElement.text();
+                    var value = $(this).attr('name');
+                    if (value != 'geom' && value != 'the_geom' && text_content != "") {
+                        Att_name_pickobj.push(value);
+                        Att_title_pickobj.push(text_content);
+                    }
+                });
+            });
 
-// Add the highlight layer to your map
-map.addLayer(highlightLayer);
+            // Gọi hàm callback và truyền dữ liệu thu thập được
+            callback(Att_name_pickobj, Att_title_pickobj);
+        }
+    });
+}
+// TẠO BẢNG
+function createTableFromArrays(Att_title_pickobj, Att_value_pickobj) {
+    var table = document.createElement("table");
+    table.setAttribute("class", "table table-bordered");
+    table.setAttribute("id", "table_popup");
+
+    // Tạo hàng tiêu đề
+    var tr = table.insertRow(-1);
+    for (var i = 0; i < Att_title_pickobj.length; i++) {
+        var th = document.createElement("th");
+        th.innerHTML = Att_title_pickobj[i];
+        tr.appendChild(th);
+    }
+
+    // Thêm giá trị từ mảng Att_value_pickobj
+    tr = table.insertRow(-1);
+    for (var i = 0; i < Att_value_pickobj.length; i++) {
+        var tabCell = tr.insertCell(-1);
+        tabCell.innerHTML = Att_value_pickobj[i];
+    }
+    return table;
+}
 
 // lấy thông tin đối tượng
 function getinfo(evt) {
-
-    if (geojson) {
-        map.removeLayer(geojson);
+    if (geojson_pickobj) {
+        map.removeLayer(geojson_pickobj);
     }
 
-    if (featureOverlay) {
-        featureOverlay.getSource().clear();
-        map.removeLayer(featureOverlay);
-
-    }
-    // Clear the previous features from the highlight layer
-    highlightLayer.getSource().clear();
 
     var coordinate = evt.coordinate;
     var viewResolution = /** @type {number} */ (view.getResolution());
@@ -267,94 +281,217 @@ function getinfo(evt) {
     var no_layers = overlays.getLayers().get('length');
     // alert(no_layers);
     var url = new Array();
-    var url_2 = new Array();
+    //var url_2 = new Array();
     var wmsSource = new Array();
     var layer_title = new Array();
     var i;
 
-    for (i = 0; i < no_layers; i++) {
-        //alert(overlays.getLayers().item(i).getVisible());
-        var visibility = overlays.getLayers().item(i).getVisible();
-        //alert(visibility);
-        if (visibility == true) {
-            //alert(i);
+    var Att_value_pickobj = [];
+    //
+    // Sử dụng hàm getFeatureTypeAttributes
+    var layerName = 'Quy hoạch khu bến';
+    getFeatureTypeAttributes(layerName, function (Att_name_pickobj, Att_title_pickobj) {
+
+        //console.log('Attribute Names:', Att_name_pickobj);
+        //console.log('Attribute Titles:', Att_title_pickobj);
+        // Hoặc thực hiện các thao tác khác với danh sách thu thập được
+
+        for (i = 0; i < no_layers; i++) {
+            //alert(overlays.getLayers().item(i).getVisible());
+            var visibility = overlays.getLayers().item(i).getVisible();
+            //alert(visibility);
             layer_title[i] = overlays.getLayers().item(i).get('title');
-            //alert(layer_title[i]);
-            wmsSource[i] = new ol.source.ImageWMS({
-                url: 'http://localhost:8080/geoserver/wms',
-                params: { 'LAYERS': layer_title[i] },
-                serverType: 'geoserver',
-                crossOrigin: 'anonymous'
+            if (visibility == true && layer_title[i] == 'Quy hoạch khu bến') {
 
-            });
-
-            //console.log(wmsSource[i]);
-            //var coordinate2 = evt.coordinate;
-            //alert(coordinate[0]);
-            url[i] = wmsSource[i].getFeatureInfoUrl(
-                evt.coordinate, viewResolution, 'EPSG:4326',
-                { 'INFO_FORMAT': 'text/html' });
-            //console.log(url[i]);
-
-            //assuming you use jquery
-            $.get(url[i], function (data) {
                 //alert(i);
-                //append the returned html data
-                // $("#info").html(data);
-                //document.getElementById('info').innerHTML = data;
-                //document.getElementById('popup-content').innerHTML = '<p>Feature Info</p><code>' + data + '</code>';
-                //alert(dat[i]);
-                $("#popup-content").append(data);
-                //document.getElementById('popup-content').innerHTML = '<p>Feature Info</p><code>' + data + '</code>';
-                overlay.setPosition(coordinate);
-                layerSwitcher.renderPanel();
+                //var type = overlays.getLayers().item(i).get('typeName');
+                //alert(type);
+                //alert(layer_title[i]);
+                wmsSource[i] = new ol.source.ImageWMS({
+                    url: 'http://localhost:8080/geoserver/wms',
+                    params: { 'LAYERS': layer_title[i] },
+                    serverType: 'geoserver',
+                    crossOrigin: 'anonymous'
 
-            });
-            //alert(layer_title[i]);
-            //alert(data);
-            // Create a feature and add it to the highlight layer
-            // Tạo CQL filter sử dụng CONTAINS
-            var cqlFilter = "CONTAINS(geom, POINT(" + coordinate[0] + " " + coordinate[1] + "))";
-            var url_json = "http://localhost:8080/geoserver/wfs?request=GetFeature&version=1.0.0&typeName=" + layer_title[i] + "&outputFormat=json&cql_filter=" + encodeURIComponent(cqlFilter)
-            //console.log(url_json)
-            //console.log(url);
-            var style = new ol.style.Style({
-                fill: new ol.style.Fill({
-                    color: 'rgba(255, 255, 255, 0.7)'
-                }),
-                stroke: new ol.style.Stroke({
-                    color: '#ffcc33',
-                    width: 3
-                }),
+                });
 
-                image: new ol.style.Circle({
-                    radius: 7,
+                //console.log(wmsSource[i]);
+                //var coordinate2 = evt.coordinate;
+                //alert(coordinate[0]);
+                url[i] = wmsSource[i].getFeatureInfoUrl(
+                    evt.coordinate, viewResolution, 'EPSG:4326',
+                    { 'INFO_FORMAT': 'text/html' });
+                //console.log(url[i]);
+                //assuming you use jquery
+                $.get(url[i], function (data) {
+                    //alert(i);
+                    //append the returned html data
+                    // $("#info").html(data);
+                    //document.getElementById('info').innerHTML = data;
+                    //document.getElementById('popup-content').innerHTML = '<p>Feature Info</p><code>' + data + '</code>';
+                    //alert(dat[i]);
+                    //alert(data);
+                    var parser = new DOMParser();
+                    var htmlDoc = parser.parseFromString(data, 'text/html');
+
+                    // Lấy danh sách tiêu đề cột từ hàng đầu tiên (hàng tiêu đề)
+                    var headerRow = htmlDoc.querySelector('table.featureInfo tr:first-child');
+                    var headers = headerRow.querySelectorAll('th');
+
+                    // Lấy danh sách tất cả các thẻ <tr> trong bảng (bỏ qua hàng đầu tiên)
+                    var rows = htmlDoc.querySelectorAll('table.featureInfo tr:not(:first-child)');
+                    var cells = rows[0].querySelectorAll('td');
+
+                    for (i = 0; i < headers.length; i++) {
+                        //console.log(headers[i].textContent);
+                        for (j = 0; j < Att_name_pickobj.length; j++) {
+                            if (headers[i].textContent == Att_name_pickobj[j]) {
+                                Att_value_pickobj.push(cells[i].textContent);
+                            }
+                        }
+                    }
+
+
+                    // Tạo bảng HTML                    
+
+                    var tableElement = createTableFromArrays(Att_title_pickobj, Att_value_pickobj);
+
+                    $("#popup-content").append(tableElement);
+                    //$("#popup-content").append(data);
+                    //document.getElementById('popup-content').innerHTML = '<p>Feature Info</p><code>' + data + '</code>';
+                    overlay.setPosition(coordinate);
+                    layerSwitcher.renderPanel();
+
+                });
+                //alert(layer_title[i]);
+                //alert(data);
+                // Create a feature and add it to the highlight layer
+                // Tạo CQL filter sử dụng CONTAINS
+                var cqlFilter = "CONTAINS(geom, POINT(" + coordinate[0] + " " + coordinate[1] + "))";
+                var url_json = "http://localhost:8080/geoserver/wfs?request=GetFeature&version=1.0.0&typeName=" + layer_title[i] + "&outputFormat=json&cql_filter=" + encodeURIComponent(cqlFilter)
+                //console.log(url_json)
+                //console.log(url);
+
+                var style = new ol.style.Style({
                     fill: new ol.style.Fill({
-                        color: '#ffcc33'
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#ffcc33',
+                        width: 3
+                    }),
+
+                    image: new ol.style.Circle({
+                        radius: 7,
+                        fill: new ol.style.Fill({
+                            color: '#ffcc33'
+                        })
                     })
-                })
-            });
+                });
 
-            geojson = new ol.layer.Vector({
-                //title:'dfdfd',
-                //title: '<h5>' + value_crop+' '+ value_param +' '+ value_seas+' '+value_level+'</h5>',
-                source: new ol.source.Vector({
-                    url: url_json,
-                    format: new ol.format.GeoJSON()
-                }),
-                style: style,
+                geojson_pickobj = new ol.layer.Vector({
+                    //title:'dfdfd',
+                    //title: '<h5>' + value_crop+' '+ value_param +' '+ value_seas+' '+value_level+'</h5>',
+                    source: new ol.source.Vector({
+                        url: url_json,
+                        format: new ol.format.GeoJSON()
+                    }),
+                    style: style,
 
-            });
+                });
 
-            var highlightFeature = new ol.Feature({
-                geometry: new ol.geom.Point(coordinate)
-            });
+                map.addLayer(geojson_pickobj);
 
-            highlightLayer.getSource().addFeature(highlightFeature);
+                //alert(Att_name_pickobj.length);
+                /*
+                // TẠO BẢNG HIỂN THỊ THÔNG TIN
+                $.getJSON(url_json, function (data) {
+                    //alert(data.features[0].properties);
+                    //alert(data.features.length);
+                    var col = [];
+                    col.push('id');
+                    for (var i = 0; i < data.features.length; i++) {
+    
+                        for (var key in data.features[i].properties) {
+    
+                            if (col.indexOf(key) === -1) {
+                                col.push(key);
+                            }
+                        }
+                    }
+    
+                    // TẠO BẢNG 
+    
+                    var table = document.createElement("table");
+                    table.setAttribute("class", "table table-bordered");
+                    table.setAttribute("id", "table");
+                    // CREATE HTML TABLE HEADER ROW USING THE EXTRACTED HEADERS ABOVE.
+    
+                    var tr = table.insertRow(-1);                   // TABLE ROW.
+                    for (var i = 0; i < col.length; i++) {
+                        if (i == 0) {
+                            var th = document.createElement("th");      // TABLE HEADER.
+                            th.innerHTML = col[i];
+                            tr.appendChild(th);
+                        }
+                        for (var j = 0; j < Att_name_pickobj.length; j++) {
+                            if (col[i] == Att_name_pickobj[j]) {
+                                var th = document.createElement("th");      // TABLE HEADER.
+                                th.innerHTML = Att_title_pickobj[j];
+                                tr.appendChild(th);
+                                break;
+                            }
+                        }
+    
+                    }
+    
+                    // ADD JSON DATA TO THE TABLE AS ROWS.
+                    for (var i = 0; i < data.features.length; i++) {
+    
+                        tr = table.insertRow(-1);
+    
+                        for (var j = 0; j < Att_name_pickobj.length + 1; j++) {
+                            var tabCell = tr.insertCell(-1);
+                            if (j == 0) { tabCell.innerHTML = data.features[i]['id']; }
+                            else {
+                                //alert(data.features[i]['id']);
+                                for (var jj = 0; jj < col.length; jj++) {
+                                    if (col[jj] == Att_name_pickobj[j - 1]) {
+                                        tabCell.innerHTML = data.features[i].properties[col[jj]];
+                                        //alert(tabCell.innerHTML);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+    
+    
+    
+                    // FINALLY ADD THE NEWLY CREATED TABLE WITH JSON DATA TO A CONTAINER.
+                    var divContainer = document.getElementById("table_data");
+                    divContainer.innerHTML = "";
+                    divContainer.appendChild(table);
+                    addRowHandlers();
+                    // ẩn cột ID
+                    var rows = table.rows;
+                    var cells = rows[0].cells;
+                    for (var i = 0; i < rows.length; i++) {
+                        var cells = rows[i].cells;
+                        if (cells.length > 0) {
+                            cells[0].style.display = 'none'; // Ẩn cột đầu tiên
+                        }
+                    }
+                    document.getElementById('map').style.height = '85%';
+                    document.getElementById('table_data').style.height = '11%';
+                    map.updateSize();
+                });
+                //map.on('click', highlight);
+                //addRowHandlers();
+                */
+            }
         }
-    }
-    map.addLayer(geojson);
-
+    });
 }
 
 
@@ -374,18 +511,21 @@ getinfotype.onchange = function () {
     if (getinfotype.value == 'activate_getinfo') {
 
         map.on('singleclick', getinfo);
-
-
     }
     else if (getinfotype.value == 'deactivate_getinfo') {
+
+        if (geojson_pickobj) { geojson_pickobj.getSource().clear(); map.removeLayer(geojson_pickobj); }
         map.un('singleclick', getinfo);
         overlay.setPosition(undefined);
         closer.blur();
     }
 };
 
-// measure tool
 
+
+
+
+// measure tool
 var source = new ol.source.Vector();
 var vectorLayer = new ol.layer.Vector({
     //title: 'layer',
@@ -727,12 +867,34 @@ btn_do_chieudai.addEventListener("mouseout", function () {
     hoverContent.style.display = "none";
 });
 // Gán sự kiện onclick cho nút
+var buttonState = true; // Sử dụng biến để theo dõi trạng thái của nút
 btn_do_chieudai.onclick = function () {
     // Đoạn mã JavaScript mà bạn muốn thực thi khi nút được nhấp
     //alert('Đo chiều dài');
+    if (buttonState) {
+        do_chieu_dai();
+    } else {
+        map.removeInteraction(draw);
+        if (draw1) { map.removeInteraction(draw1); }
+        if (vector1) { vector1.getSource().clear(); }
 
-    do_chieu_dai();
+        if (vectorLayer) { vectorLayer.getSource().clear(); }
+        map.removeOverlay(helpTooltip);
+        if (measureTooltipElement) {
+            var elem = document.getElementsByClassName("tooltip tooltip-static");
 
+            for (var i = elem.length - 1; i >= 0; i--) {
+
+                elem[i].remove();
+                //alert(elem[i].innerHTML);
+            }
+        }
+        map.un('singleclick', getinfo);
+        overlay.setPosition(undefined);
+        closer.blur();
+        map.un('click', highlight);
+    }
+    buttonState = !buttonState; // Chuyển đổi trạng thái của biến
 };
 function do_chieu_dai() {
     //alert('Đo chiều dài');
@@ -749,6 +911,7 @@ function do_chieu_dai() {
 // Lấy tham chiếu đến nút bằng ID
 var btn_do_dt = document.getElementById("btn_do_dt");
 var hoverContent = document.getElementById("dynamic-content");
+var buttonState_2 = true; // Sử dụng biến để theo dõi trạng thái của nút
 // Gán sự kiện mouseover cho nút
 btn_do_dt.addEventListener("mouseover", function (event) {
     // Thay đổi nội dung và vị trí của div khi hover
@@ -769,8 +932,30 @@ btn_do_dt.addEventListener("mouseout", function () {
 btn_do_dt.onclick = function () {
     // Đoạn mã JavaScript mà bạn muốn thực thi khi nút được nhấp
     //alert('Đo chiều dài');
+    if (buttonState_2) {
+        do_dt();
+    } else {
+        map.removeInteraction(draw);
+        if (draw1) { map.removeInteraction(draw1); }
+        if (vector1) { vector1.getSource().clear(); }
 
-    do_dt();
+        if (vectorLayer) { vectorLayer.getSource().clear(); }
+        map.removeOverlay(helpTooltip);
+        if (measureTooltipElement) {
+            var elem = document.getElementsByClassName("tooltip tooltip-static");
+
+            for (var i = elem.length - 1; i >= 0; i--) {
+
+                elem[i].remove();
+                //alert(elem[i].innerHTML);
+            }
+        }
+        map.un('singleclick', getinfo);
+        overlay.setPosition(undefined);
+        closer.blur();
+        map.un('click', highlight);
+    }
+    buttonState_2 = !buttonState_2; // Chuyển đổi trạng thái của biến
 
 };
 function do_dt() {
@@ -784,6 +969,7 @@ function do_dt() {
 
 }
 // wms_layers_window
+
 // wms_layers_window
 
 function wms_layers() {
@@ -914,7 +1100,6 @@ function wms_layers() {
 
 function add_layer() {
     //alert("jd");
-
     //alert(layer_name);
     //map.removeControl(layerSwitcher);
 
@@ -974,7 +1159,9 @@ function add_layer() {
 }
 
 // layers_name
+
 $(document).ready(function () {
+
     $.ajax({
         type: "GET",
         url: "http://localhost:8080/geoserver/wfs?request=getCapabilities",
@@ -986,21 +1173,53 @@ $(document).ready(function () {
                 //alert(title);
                 var name = $(this).find('Name').text();
                 //select.append("<option/><option class='ddheader' value='"+ name +"'>"+title+"</option>");
+                var no_layers = overlays.getLayers().get('length');
+                //Thêm dữ liệu vào Combobox
+                $(this).find('Title').each(function () {
+                    var value = $(this).text();
+                    //alert(value);
+                    for (i = 0; i < no_layers; i++) {
+                        var nametitle = overlays.getLayers().item(i).get('title')
+                        if (nametitle == value) {
+                            select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
+                        }
+                    };
+                });
+
+                //Thêm dữ liệu vào Combobox
                 $(this).find('Name').each(function () {
                     var value = $(this).text();
-                    select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
+                    //alert(value);
+                    //select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
                 });
             });
-            //select.children(":first").text("please make a selection").attr("selected",true);
+            //select.children(":first").text("please make a selection").attr("selected", true);
+            //select.prop("selectedIndex", 1);
         }
-    });
-});
 
+    });
+
+
+});
+/*
+// Add layer name
+$(document).ready(function () {
+    var select = $('#layer');
+    for (i = 0; i < no_layers; i++) {
+        var nametitle = overlays.getLayers().item(i).get('title')
+        alert(nametitle);
+    };
+
+});
+*/
 // attributes_dropdown
+var Att_name = [];
 
 $(function () {
     $("#layer").change(function () {
-
+        // Xóa mảng dữ liệu cũ
+        Att_name = [];
+        var att_index = 1;
         var attributes = document.getElementById("attributes");
         var length = attributes.options.length;
         for (i = length - 1; i >= 0; i--) {
@@ -1008,13 +1227,14 @@ $(function () {
         }
 
         var value_layer = $(this).val();
+
         //alert(value_crop);
 
         //var level = document.getElementById("level");
         //var value_level = level.options[level.selectedIndex].value;
-        // var url = "http://localhost:8082/geoserver/wfs?service=WFS&request=DescribeFeatureType&version=1.1.0&typeName="+value_layer;
-        //  alert(url);
-
+        //var url = "http://localhost:8080/geoserver/wfs?service=WFS&request=DescribeFeatureType&version=1.1.0&typeName=" + value_layer;
+        //alert(url);
+        //console.log(url);
         attributes.options[0] = new Option('--Chọn trường dữ liệu--', "");
         //  alert(url);
 
@@ -1031,17 +1251,29 @@ $(function () {
                     $(xml).find('xsd\\:sequence').each(function () {
 
                         $(this).find('xsd\\:element').each(function () {
+                            // Find the <xsd:documentation> element within the current <xsd:element>
+                            var documentationElement = $(this).find('xsd\\:documentation');
+                            // Extract the text content of the <xsd:documentation> element
+                            var text_content = documentationElement.text();
+                            //alert(text_content);
                             var value = $(this).attr('name');
                             //alert(value);
                             var type = $(this).attr('type');
                             //alert(type);
-                            if (value != 'geom' && value != 'the_geom') {
-                                select.append("<option class='ddindent' value='" + type + "'>" + value + "</option>");
+                            //var Nillable = $(this).attr('nillable');
+                            //alert(Nillable);
+                            if (value != 'geom' && value != 'the_geom' && text_content != "") {
+                                Att_name[att_index] = value;
+                                att_index = att_index + 1;
+                                select.append("<option class='ddindent' value='" + type + "'>" + text_content + "</option>");
+
                             }
                         });
 
                     });
+
                 }
+
             });
         });
 
@@ -1063,17 +1295,17 @@ $(function () {
         var value_type = $(this).val();
         // alert(value_type);
         var value_attribute = $('#attributes option:selected').text();
-        operator.options[0] = new Option('--Phương pháp tìm kiếm--', "");
+        //operator.options[0] = new Option('--Phương pháp tìm kiếm--', "");
 
         if (value_type == 'xsd:short' || value_type == 'xsd:int' || value_type == 'xsd:double') {
             var operator1 = document.getElementById("operator");
-            operator1.options[1] = new Option('Lớn hơn', '>');
-            operator1.options[2] = new Option('Nhỏ hơn', '<');
-            operator1.options[3] = new Option('Bằng', '=');
+            operator1.options[0] = new Option('Lớn hơn', '>');
+            operator1.options[1] = new Option('Nhỏ hơn', '<');
+            operator1.options[2] = new Option('Bằng', '=');
         }
         else if (value_type == 'xsd:string') {
             var operator1 = document.getElementById("operator");
-            operator1.options[1] = new Option('Gần đúng', 'ILike');
+            operator1.options[0] = new Option('Nhập tên', 'Like');
 
         }
 
@@ -1187,7 +1419,6 @@ function addRowHandlers() {
 }
 
 
-
 function highlight(evt) {
     featureOverlay.getSource().clear();
     var feature = map.forEachFeatureAtPixel(evt.pixel,
@@ -1290,7 +1521,9 @@ function query() {
     //alert(value_layer);
 
     var attribute = document.getElementById("attributes");
-    var value_attribute = attribute.options[attribute.selectedIndex].text;
+    //var value_attribute = attribute.options[attribute.selectedIndex].text;
+    //var value_attribute = attribute.options[attribute.selectedIndex].value;
+    var value_attribute = Att_name[attribute.selectedIndex];
     //alert(value_attribute);
 
     var operator = document.getElementById("operator");
@@ -1300,8 +1533,8 @@ function query() {
     var txt = document.getElementById("value");
     var value_txt = txt.value;
 
-    if (value_operator == 'ILike') {
-        value_txt = "" + value_txt + "%25";
+    if (value_operator == 'Like') {
+        value_txt = "%25" + value_txt + "%25";
         //alert(value_txt);
         //value_attribute = 'strToLowerCase('+value_attribute+')';
     }
@@ -1310,9 +1543,6 @@ function query() {
         //value_attribute = value_attribute;
     }
     //alert(value_txt);
-
-
-
 
     var url = "http://localhost:8080/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=" + value_layer + "&CQL_FILTER=" + value_attribute + "+" + value_operator + "+'" + value_txt + "'&outputFormat=application/json"
     //alert(url);
@@ -1357,6 +1587,7 @@ function query() {
     //overlays.getLayers().push(geojson);
     //console.log(geojson);
     map.addLayer(geojson);
+    //console.log(url);
     $.getJSON(url, function (data) {
         //alert(data.features[0].properties);
         //alert(data.features.length);
@@ -1373,20 +1604,31 @@ function query() {
         }
 
 
-
+        // Tạo bảng hiển thị thông tin
         var table = document.createElement("table");
 
 
         table.setAttribute("class", "table table-bordered");
         table.setAttribute("id", "table");
         // CREATE HTML TABLE HEADER ROW USING THE EXTRACTED HEADERS ABOVE.
-
+        var attributes = document.getElementById("attributes"); // Lấy trường thông tin
         var tr = table.insertRow(-1);                   // TABLE ROW.
 
         for (var i = 0; i < col.length; i++) {
-            var th = document.createElement("th");      // TABLE HEADER.
-            th.innerHTML = col[i];
-            tr.appendChild(th);
+            if (i == 0) {
+                var th = document.createElement("th");      // TABLE HEADER.
+                th.innerHTML = col[i];
+                tr.appendChild(th);
+            }
+            for (var j = 0; j < Att_name.length; j++) {
+                if (col[i] == Att_name[j]) {
+                    var th = document.createElement("th");      // TABLE HEADER.
+                    th.innerHTML = attributes.options[j].text;
+                    tr.appendChild(th);
+                    break;
+                }
+            }
+
         }
 
         // ADD JSON DATA TO THE TABLE AS ROWS.
@@ -1394,13 +1636,18 @@ function query() {
 
             tr = table.insertRow(-1);
 
-            for (var j = 0; j < col.length; j++) {
+            for (var j = 0; j < Att_name.length; j++) {
                 var tabCell = tr.insertCell(-1);
                 if (j == 0) { tabCell.innerHTML = data.features[i]['id']; }
                 else {
                     //alert(data.features[i]['id']);
-                    tabCell.innerHTML = data.features[i].properties[col[j]];
-                    //alert(tabCell.innerHTML);
+                    for (var jj = 0; jj < col.length; jj++) {
+                        if (col[jj] == Att_name[j]) {
+                            tabCell.innerHTML = data.features[i].properties[col[jj]];
+                            //alert(tabCell.innerHTML);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -1412,9 +1659,18 @@ function query() {
         divContainer.innerHTML = "";
         divContainer.appendChild(table);
         addRowHandlers();
+        // ẩn cột ID
+        var rows = table.rows;
+        var cells = rows[0].cells;
+        for (var i = 0; i < rows.length; i++) {
+            var cells = rows[i].cells;
+            if (cells.length > 0) {
+                cells[0].style.display = 'none'; // Ẩn cột đầu tiên
+            }
+        }
 
         document.getElementById('map').style.height = '71%';
-        document.getElementById('table_data').style.height = '25%';
+        document.getElementById('table_data').style.height = '20%';
         //map.updateSize();
     });
 
@@ -1444,21 +1700,88 @@ $(document).ready(function () {
                 //alert(title);
                 var name = $(this).find('Name').text();
                 //select.append("<option/><option class='ddheader' value='"+ name +"'>"+title+"</option>");
+                var no_layers = overlays.getLayers().get('length');
+                //Thêm dữ liệu vào Combobox
+                $(this).find('Title').each(function () {
+                    var value = $(this).text();
+                    //alert(value);
+                    for (i = 0; i < no_layers; i++) {
+                        var nametitle = overlays.getLayers().item(i).get('title')
+                        if (nametitle == value) {
+                            select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
+                        }
+                    };
+                });
                 $(this).find('Name').each(function () {
                     var value = $(this).text();
-                    select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
+                    // Thêm dữ liệu vào Combobox
+                    //select.append("<option class='ddindent' value='" + value + "'>" + value + "</option>");
                 });
             });
             //select.children(":first").text("please make a selection").attr("selected",true);
         }
     });
 });
+// attributes_dropdown
+var Att_name_dropdown = [];
+var Att_title_dropdown = [];
+$(function () {
+    $("#layer1").change(function () {
 
+        var value_layer = $(this).val();
+        //alert(value_layer);
+        //var url = "http://localhost:8080/geoserver/wfs?service=WFS&request=DescribeFeatureType&version=1.1.0&typeName=" + value_layer;
+        //alert(url);
+        //console.log(url);
+        // Xóa mảng dữ liệu cũ
+        Att_name_dropdown = [];
+        Att_title_dropdown = [];
+        var att_index_dropdown = 0;
+        $(document).ready(function () {
+            $.ajax({
+                type: "GET",
+                url: "http://localhost:8080/geoserver/wfs?service=WFS&request=DescribeFeatureType&version=1.1.0&typeName=" + value_layer,
+                dataType: "xml",
+                success: function (xml) {
 
+                    var select = $('#attributes');
+                    //var title = $(xml).find('xsd\\:complexType').attr('name');
+                    //	alert(title);
+                    $(xml).find('xsd\\:sequence').each(function () {
+
+                        $(this).find('xsd\\:element').each(function () {
+                            // Find the <xsd:documentation> element within the current <xsd:element>
+                            var documentationElement = $(this).find('xsd\\:documentation');
+                            // Extract the text content of the <xsd:documentation> element
+                            var text_content = documentationElement.text();
+                            //alert(text_content);
+                            var value = $(this).attr('name');
+                            //alert(value);
+                            var type = $(this).attr('type');
+                            //alert(type);
+                            //var Nillable = $(this).attr('nillable');
+                            //alert(Nillable);
+                            if (value != 'geom' && value != 'the_geom' && text_content != "") {
+                                Att_name_dropdown.push(value);
+                                Att_title_dropdown.push(text_content);
+                                att_index_dropdown = att_index_dropdown + 1;
+                                //select.append("<option class='ddindent' value='" + type + "'>" + text_content + "</option>");
+
+                            }
+                        });
+
+                    });
+
+                }
+
+            });
+        });
+    });
+
+});
 // draw shapes
 
 var source1 = new ol.source.Vector({ wrapX: false });
-
 var vector1 = new ol.layer.Vector({
     source: source1
 });
@@ -1610,6 +1933,11 @@ function add_draw_Interaction() {
                 //overlays.getLayers().push(geojson);
                 map.addLayer(geojson);
                 map.removeInteraction(draw1);
+
+                // Lấy thông tin thuộc tính của đối tượng
+                //alert(Att_name_dropdown.length);
+
+
                 $.getJSON(url, function (data) {
                     //alert(data.features[0].properties);
                     //alert(data.features.length);
@@ -1625,7 +1953,7 @@ function add_draw_Interaction() {
                         }
                     }
 
-
+                    // tạo bảng hiển thị thông tin đổi tượng
 
                     var table = document.createElement("table");
                     table.setAttribute("class", "table table-bordered");
@@ -1633,11 +1961,21 @@ function add_draw_Interaction() {
                     // CREATE HTML TABLE HEADER ROW USING THE EXTRACTED HEADERS ABOVE.
 
                     var tr = table.insertRow(-1);                   // TABLE ROW.
-
                     for (var i = 0; i < col.length; i++) {
-                        var th = document.createElement("th");      // TABLE HEADER.
-                        th.innerHTML = col[i];
-                        tr.appendChild(th);
+                        if (i == 0) {
+                            var th = document.createElement("th");      // TABLE HEADER.
+                            th.innerHTML = col[i];
+                            tr.appendChild(th);
+                        }
+                        for (var j = 0; j < Att_name_dropdown.length; j++) {
+                            if (col[i] == Att_name_dropdown[j]) {
+                                var th = document.createElement("th");      // TABLE HEADER.
+                                th.innerHTML = Att_title_dropdown[j];
+                                tr.appendChild(th);
+                                break;
+                            }
+                        }
+
                     }
 
                     // ADD JSON DATA TO THE TABLE AS ROWS.
@@ -1645,13 +1983,18 @@ function add_draw_Interaction() {
 
                         tr = table.insertRow(-1);
 
-                        for (var j = 0; j < col.length; j++) {
+                        for (var j = 0; j < Att_name_dropdown.length + 1; j++) {
                             var tabCell = tr.insertCell(-1);
                             if (j == 0) { tabCell.innerHTML = data.features[i]['id']; }
                             else {
                                 //alert(data.features[i]['id']);
-                                tabCell.innerHTML = data.features[i].properties[col[j]];
-                                //alert(tabCell.innerHTML);
+                                for (var jj = 0; jj < col.length; jj++) {
+                                    if (col[jj] == Att_name_dropdown[j - 1]) {
+                                        tabCell.innerHTML = data.features[i].properties[col[jj]];
+                                        //alert(tabCell.innerHTML);
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -1663,9 +2006,17 @@ function add_draw_Interaction() {
                     divContainer.innerHTML = "";
                     divContainer.appendChild(table);
                     addRowHandlers();
-
+                    // ẩn cột ID
+                    var rows = table.rows;
+                    var cells = rows[0].cells;
+                    for (var i = 0; i < rows.length; i++) {
+                        var cells = rows[i].cells;
+                        if (cells.length > 0) {
+                            cells[0].style.display = 'none'; // Ẩn cột đầu tiên
+                        }
+                    }
                     document.getElementById('map').style.height = '71%';
-                    document.getElementById('table_data').style.height = '25%';
+                    document.getElementById('table_data').style.height = '20%';
                     map.updateSize();
                 });
 
@@ -1713,12 +2064,13 @@ draw_typeSelect.onchange = function () {
 };
 
 function clear_all() {
-    document.getElementById('map').style.height = '96%';
+    document.getElementById('map').style.height = '91%';
     document.getElementById('table_data').style.height = '0%';
     map.updateSize();
     $('#table').empty();
     //$('#table1').empty();
     if (geojson) { geojson.getSource().clear(); map.removeLayer(geojson); }
+    if (geojson_pickobj) { geojson_pickobj.getSource().clear(); map.removeLayer(geojson_pickobj); }
     if (featureOverlay) { featureOverlay.getSource().clear(); map.removeLayer(featureOverlay); }
     map.removeInteraction(draw);
     if (draw1) { map.removeInteraction(draw1); }
@@ -1738,10 +2090,12 @@ function clear_all() {
     map.un('singleclick', getinfo);
     overlay.setPosition(undefined);
     closer.blur();
-
     map.un('click', highlight);
-
-    highlightLayer.getSource().clear();
+    // Chuyển trạng thái nút
+    buttonState = true;
+    buttonState_2 = true;
+    // Alway uncheck
+    //toggleSwitch.checked = false;
 
 }
 
@@ -1768,3 +2122,101 @@ toggleSwitch.addEventListener("change", function () {
         op_bat.dispatchEvent(event);
     }
 });
+
+
+// Bấm chuột trên màn hinh
+map.on('singleclick', Click_onscreen);
+// 
+function Click_onscreen(evt) {
+    if (buttonState && buttonState_2) {
+        if (!toggleSwitch.checked) {
+            map.on('singleclick', Selected_obj);
+        }
+        else {
+            // Thực hiện hành động khi checkbox tắt ở đây
+            var op_bat = document.getElementById("getinfotype");
+            op_bat.value = 'activate_getinfo';
+            // Tạo sự kiện change để chạy sự kiện onchange của thẻ select
+            var event = new Event("change");
+            // Kích hoạt sự kiện change cho thẻ select
+            op_bat.dispatchEvent(event);
+        }
+    }
+}
+///
+
+// lấy thông tin đối tượng
+var geojson_pickobj;
+function Selected_obj(evt) {
+
+    if (geojson_pickobj) {
+        map.removeLayer(geojson_pickobj);
+    }
+
+
+    var coordinate = evt.coordinate;
+    var viewResolution = /** @type {number} */ (view.getResolution());
+    var no_layers = overlays.getLayers().get('length');
+    // alert(no_layers);
+    var wmsSource = new Array();
+    var layer_title = new Array();
+    var i;
+    for (i = 0; i < no_layers; i++) {
+        //alert(overlays.getLayers().item(i).getVisible());
+        var visibility = overlays.getLayers().item(i).getVisible();
+        //alert(visibility);
+        layer_title[i] = overlays.getLayers().item(i).get('title');
+        //alert(layer_title[i]);
+        if (visibility == true && layer_title[i] == 'Quy hoạch khu bến') {
+            //alert(i);
+            wmsSource[i] = new ol.source.ImageWMS({
+                url: 'http://localhost:8080/geoserver/wms',
+                params: { 'LAYERS': layer_title[i] },
+                serverType: 'geoserver',
+                crossOrigin: 'anonymous'
+            });
+            // Create a feature and add it to the highlight layer
+            // Tạo CQL filter sử dụng CONTAINS
+            var cqlFilter = "CONTAINS(geom, POINT(" + coordinate[0] + " " + coordinate[1] + "))";
+            var url_json = "http://localhost:8080/geoserver/wfs?request=GetFeature&version=1.0.0&typeName=" + layer_title[i] + "&outputFormat=json&cql_filter=" + encodeURIComponent(cqlFilter)
+            //console.log(url_json)
+            //console.log(url);
+
+
+            //alert(Att_name_pickobj.length);     
+
+            // CHỈNH STYLE HIỂN THỊ CHO ĐỐI TƯỢNG
+            var style = new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(255, 255, 255, 0.7)'
+                }),
+                stroke: new ol.style.Stroke({
+                    color: '#ffcc33',
+                    width: 3
+                }),
+
+                image: new ol.style.Circle({
+                    radius: 7,
+                    fill: new ol.style.Fill({
+                        color: '#ffcc33'
+                    })
+                })
+            });
+
+            geojson_pickobj = new ol.layer.Vector({
+                //title:'dfdfd',
+                //title: '<h5>' + value_crop+' '+ value_param +' '+ value_seas+' '+value_level+'</h5>',
+                source: new ol.source.Vector({
+                    url: url_json,
+                    format: new ol.format.GeoJSON()
+                }),
+                style: style,
+
+            });
+            map.addLayer(geojson_pickobj);
+
+        }
+    }
+
+
+}

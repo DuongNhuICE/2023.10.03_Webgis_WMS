@@ -12,17 +12,17 @@
        top: 0%;
        left: 0%;
        width: 100%;
-       height: 4%;
+       height: 9%;
        background-color: #f1f3f4;
        border: 1px solid darkgrey;
    }
 
    #map {
        position: absolute;
-       top: 4%;
-       left: 20%;
-       width: 80%;
-       height: 96%;
+       top: 9%;
+       left: 19%;
+       width: 81%;
+       height: 91%;
        overflow: scroll;
        border: 0.5px solid #4CAF50;
    }
@@ -42,13 +42,18 @@
        position: absolute;
        bottom: 0%;
        overflow: scroll;
-       left: 20%;
+       left: 19.5%;
        right: 0%;
        height: 0%;
        border: 1px solid #4CAF50;
    }
 
    #table {
+       white-space: nowrap;
+       grid-template-areas: "head-fixed" "body-scrollable";
+   }
+
+   #table_popup {
        white-space: nowrap;
        grid-template-areas: "head-fixed" "body-scrollable";
    }
@@ -65,6 +70,14 @@
        position: sticky;
        top: 0;
        background-color: darksalmon;
+   }
+
+   #table_popup th {
+       position: -webkit-sticky;
+       /* for Safari */
+       position: sticky;
+       top: 0;
+       background-color: rgb(236, 206, 196);
    }
 
    #table_wms_layers {
@@ -154,11 +167,11 @@
    #query_tab {
        position: absolute;
        padding: 0.5% 0%;
-       top: 4%;
-       height: 58%;
+       top: 9%;
+       height: 54%;
        overflow: scroll;
-       width: 20%;
-       left: 0%;
+       width: 19%;
+       left: 0.5%;
 
    }
 
@@ -181,8 +194,8 @@
        bottom: 0%;
        height: 38%;
        overflow: scroll;
-       width: 20%;
-       left: 0%;
+       width: 19%;
+       left: 0.5%;
        background-color: #ffffff;
        font-weight: bold;
    }
@@ -393,3 +406,109 @@
    }
 
    /* Đặt vị trí của nút */
+   /* Chỉnh logo*/
+   .logo {
+       position: absolute;
+       top: 10%;
+       left: 15%;
+       width: 117px;
+       /* Đặt chiều rộng */
+       height: 71px;
+       /* Đặt chiều cao */
+   }
+
+   /* Header */
+   header {
+       background-color: #3498db;
+       /* Chọn màu bạn muốn ở đây */
+       color: #0a21ee;
+       /* Màu chữ trắng hoặc màu tương tự cho sự tương phản */
+       padding: 0px;
+       /* Khoảng cách giữa nền và vị trí text */
+       height: 100%;
+   }
+
+   /* CSS để tùy chỉnh header và vị trí text khác (nếu cần) */
+   h1 {
+       font-size: 25px;
+       font-weight: bold;
+       /* Kích thước chữ của vị trí text */
+       margin: 0;
+       /* Loại bỏ khoảng cách ngoài của vị trí text */
+       position: fixed;
+       /* Đặt header làm phần cố định */
+       top: 15px;
+       /* Đặt header ở phía trên cùng */
+       left: 25%;
+       /* Đặt header ở phía trái */
+       width: 100%;
+       /* Đặt header chiếm toàn bộ chiều rộng */
+   }
+
+   nav {
+       margin-right: 10px;
+       position: fixed;
+       top: 40px;
+       left: 24.5%;
+   }
+
+   nav ul {
+       list-style: none;
+       padding: 0;
+       margin: 0;
+       display: flex;
+   }
+
+   nav li {
+       margin-right: 10px;
+       position: relative;
+       /* Tạo khoảng cách giữa các mục menu */
+   }
+
+   /* CSS để tùy chỉnh màu chữ khi di chuột qua mục menu */
+   nav li:hover a {
+       color: #e74c3c;
+       /* Màu chữ khi di chuột vào */
+   }
+
+   nav a {
+       text-decoration: none;
+       color: #fff;
+       font-weight: bold;
+       font-size: 16px;
+       display: block;
+       /* Để mục menu trở thành hình chữ nhật */
+       padding: 10px 10px;
+       /* Khoảng cách nội dung menu */
+   }
+
+   /* CSS để tùy chỉnh màu nền khi di chuột qua mục menu */
+   nav li:hover {
+       background-color: transparent;
+       padding: 0px 0px;
+       /* Chỉnh kích thước nền menu khi di chuột vào */
+   }
+
+   /* CSS để tạo hiệu ứng hiển thị menu ngang */
+   nav ul {
+       position: relative;
+   }
+
+   nav ul::before {
+       content: "";
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 100%;
+       height: 2px;
+       /* Chiều cao của dòng ngang */
+       background-color: #fff;
+       /* Màu của dòng ngang */
+       display: none;
+   }
+
+   /* CSS để thêm khoảng cách giữa header và nội dung chính */
+   .content {
+       margin-top: 50px;
+       /* Để tránh bị che phủ bởi menu */
+   }
