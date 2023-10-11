@@ -166,7 +166,6 @@ var map = new ol.Map({
 });
 map.addLayer(base_maps);
 map.addLayer(overlays);
-
 map.addLayer(qh_tp);
 
 // Add thêm lớp vào bản đồ
@@ -187,6 +186,7 @@ overlays.getLayers().push(rainfall);
 // Add thêm lớp vào bản đồ
 var phaotieu = new ol.layer.Image({
     title: 'Hệ thống phao báo hiệu tàu',
+    visible: false,
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
         url: 'http://localhost:8080/geoserver/wms',
@@ -216,6 +216,7 @@ overlays.getLayers().push(vungneo);
 // Add thêm lớp vào bản đồ
 var duongthuy = new ol.layer.Image({
     title: 'Đường thủy',
+    visible: false,
     // extent: [-180, -90, -180, 90],
     source: new ol.source.ImageWMS({
         url: 'http://localhost:8080/geoserver/wms',
